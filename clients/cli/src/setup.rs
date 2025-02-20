@@ -87,6 +87,8 @@ pub async fn run_initial_setup() -> SetupResult {
 
         match fs::read_to_string(&node_id_path) {
             Ok(content) => {
+                println!("\nWill run with mode Connected using node id: {}", content);
+
                 return SetupResult::Connected(content.trim().to_string());
             }
             Err(e) => {

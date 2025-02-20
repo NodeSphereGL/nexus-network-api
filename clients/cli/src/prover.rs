@@ -1,9 +1,4 @@
-use nexus_sdk::{
-    stwo::seq::Stwo,
-    Local,
-    Prover,
-    Viewable,
-};
+use nexus_sdk::{stwo::seq::Stwo, Local, Prover, Viewable};
 
 use crate::config;
 use crate::flops;
@@ -165,9 +160,9 @@ pub async fn start_prover(
                     format!("\nStarting proof #{} ...\n", proof_count).yellow()
                 );
 
-                match anonymous_proving() {
+                match authenticated_proving(&node_id, &environment).await {
                     Ok(_) => (),
-                    Err(e) => println!("Error in anonymous proving: {}", e),
+                    Err(e) => println!("\tError: {}", e),
                 }
                 proof_count += 1;
                 tokio::time::sleep(std::time::Duration::from_secs(4)).await;
