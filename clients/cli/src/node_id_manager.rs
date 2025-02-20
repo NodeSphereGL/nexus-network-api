@@ -1,8 +1,9 @@
 use colored::Colorize;
 // use rand::RngCore;
 // use random_word::Lang;
-use std::{fs, path::Path, path::PathBuf};
+use std::{fs, path::Path};
 
+/*
 pub fn get_home_directory() -> Result<PathBuf, &'static str> {
     match home::home_dir() {
         Some(path) if !path.as_os_str().is_empty() => Ok(path),
@@ -12,6 +13,7 @@ pub fn get_home_directory() -> Result<PathBuf, &'static str> {
         }
     }
 }
+*/
 
 pub fn create_nexus_directory(nexus_dir: &Path) -> std::io::Result<()> {
     println!("Attempting to create .nexus directory");
@@ -29,6 +31,7 @@ pub fn create_nexus_directory(nexus_dir: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
+/*
 pub fn read_existing_node_id(node_id_path: &Path) -> Result<String, std::io::Error> {
     let buf = fs::read(node_id_path)?;
     let id = String::from_utf8(buf)
@@ -86,3 +89,4 @@ pub fn handle_read_error(e: std::io::Error, path: &Path, default_id: &str) {
         }
     }
 }
+ */
