@@ -3,9 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 
 // Update the import path to use the proto module
-use crate::node_id_manager::{
-    create_nexus_directory, get_home_directory, handle_read_error, read_existing_node_id,
-};
+use crate::node_id_manager::create_nexus_directory;
 
 pub enum SetupResult {
     Anonymous,
@@ -20,6 +18,7 @@ pub struct UserConfig {
 }
 
 //function that takes a node_id and saves it to the user config
+/*
 fn save_node_id(node_id: &str) -> std::io::Result<()> {
     //get the home directory
     let home_path = match get_home_directory() {
@@ -63,6 +62,7 @@ fn save_node_id(node_id: &str) -> std::io::Result<()> {
         }
     }
 }
+*/
 
 pub async fn run_initial_setup() -> SetupResult {
     // Get home directory and check for prover-id file
@@ -85,73 +85,19 @@ pub async fn run_initial_setup() -> SetupResult {
             node_id
         );
 
-        //ask the user if they want to use the existing config
-        println!("Do you want to use the existing user account? (y/n)");
-        let mut use_existing_config = String::new();
-        std::io::stdin()
-            .read_line(&mut use_existing_config)
-            .unwrap();
-        let use_existing_config = use_existing_config.trim();
-        if use_existing_config == "y" {
-            match fs::read_to_string(&node_id_path) {
-                Ok(content) => {
-                    return SetupResult::Connected(content.trim().to_string());
-                }
-                Err(e) => {
-                    println!("{}", format!("Failed to read node-id file: {}", e).red());
-                    return SetupResult::Invalid;
-                }
+        match fs::read_to_string(&node_id_path) {
+            Ok(content) => {
+                return SetupResult::Connected(content.trim().to_string());
             }
-        } else {
-            println!("Ignoring existing user account...");
+            Err(e) => {
+                println!("{}", format!("Failed to read node-id file: {}", e).red());
+                return SetupResult::Invalid;
+            }
         }
     }
 
-    println!("\nThis node is not connected to any account.\n");
-    println!("[1] Enter '1' to start proving without earning NEX");
-    println!("[2] Enter '2' to start earning NEX by connecting adding your node ID");
-
-    let mut option = String::new();
-    std::io::stdin().read_line(&mut option).unwrap();
-    let option = option.trim();
-
-    //if no config file exists, ask the user to enter their email
-    match option {
-        "1" => {
-            println!("You chose option 1\n");
-            SetupResult::Anonymous
-        }
-        "2" => {
-            println!(
-                "\n===== {} =====\n",
-                "Adding your node ID to the CLI"
-                    .bold()
-                    .underline()
-                    .bright_cyan()
-            );
-            println!("You chose to start earning NEX by connecting your node ID\n");
-            println!("If you don't have a node ID, you can get it by following these steps:\n");
-            println!("1. Go to https://app.nexus.xyz/nodes");
-            println!("2. Sign in");
-            println!("3. Click on the '+ Add Node' button");
-            println!("4. Select 'Add CLI node'");
-            println!("5. You will be given a node ID to add to this CLI");
-            println!("6. Enter the node ID into the terminal below:\n");
-
-            let node_id = get_node_id_from_user();
-            match save_node_id(&node_id) {
-                Ok(_) => SetupResult::Connected(node_id),
-                Err(e) => {
-                    println!("{}", format!("Failed to save node ID: {}", e).red());
-                    SetupResult::Invalid
-                }
-            }
-        }
-        _ => {
-            println!("Invalid option");
-            SetupResult::Invalid
-        }
-    }
+    println!("Cannot find node-id, aborted !");
+    return SetupResult::Anonymous;
 }
 
 pub fn clear_node_id() -> std::io::Result<()> {
@@ -191,6 +137,7 @@ pub fn clear_node_id() -> std::io::Result<()> {
     }
 }
 
+/*
 fn get_node_id_from_user() -> String {
     println!("{}", "Please enter your node ID:".green());
     let mut node_id = String::new();
@@ -199,3 +146,4 @@ fn get_node_id_from_user() -> String {
         .expect("Failed to read node ID");
     node_id.trim().to_string()
 }
+ */
