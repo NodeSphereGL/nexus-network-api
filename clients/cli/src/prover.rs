@@ -24,9 +24,23 @@ async fn authenticated_proving(
     let public_input: u32 = proof_task.public_inputs[0] as u32;
 
     println!("3. Compiling guest program...");
-    let elf_file_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+    
+    // Print `CARGO_MANIFEST_DIR` safely
+    let cargo_manifest = option_env!("CARGO_MANIFEST_DIR").unwrap_or("NOT SET");
+    println!("CARGO_MANIFEST_DIR: {}", cargo_manifest);
+
+    // Use `/app` as the default if `CARGO_MANIFEST_DIR` is missing
+    let manifest_dir = option_env!("CARGO_MANIFEST_DIR").unwrap_or("/app");
+
+    let elf_file_path = std::path::Path::new(manifest_dir)
         .join("assets")
         .join("fib_input");
+
+    println!("Checking ELF file path: {:?}", elf_file_path);
+    if !elf_file_path.exists() {
+        panic!("❌ Error: ELF file not found at {:?}", elf_file_path);
+    }
+
     let prover =
         Stwo::<Local>::new_from_file(&elf_file_path).expect("failed to load guest program");
 
