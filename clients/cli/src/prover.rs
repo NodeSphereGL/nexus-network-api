@@ -8,6 +8,8 @@ use crate::setup;
 use crate::utils;
 use colored::Colorize;
 use sha3::{Digest, Keccak256};
+use std::env;
+use std::path::PathBuf;
 
 /// Proves a program with a given node ID
 #[allow(dead_code)]
@@ -25,16 +27,12 @@ async fn authenticated_proving(
 
     println!("3. Compiling guest program...");
     
-    // Print `CARGO_MANIFEST_DIR` safely
-    let cargo_manifest = option_env!("CARGO_MANIFEST_DIR").unwrap_or("NOT SET");
-    println!("CARGO_MANIFEST_DIR: {}", cargo_manifest);
-
-    // Use `/app` as the default if `CARGO_MANIFEST_DIR` is missing
-    let manifest_dir = option_env!("CARGO_MANIFEST_DIR").unwrap_or("/app");
-
-    let elf_file_path = std::path::Path::new(manifest_dir)
-        .join("assets")
-        .join("fib_input");
+    // Use ASSETS_DIR from environment, or fallback to `/app/assets`
+    let assets_dir = env::var("ASSETS_DIR").unwrap_or_else(|_| "/app/assets".to_string());
+    // Print debug info
+    println!("ASSETS_DIR: {}", assets_dir);
+    // Construct the file path
+    let elf_file_path = PathBuf::from(assets_dir).join("fib_input");
 
     println!("Checking ELF file path: {:?}", elf_file_path);
     if !elf_file_path.exists() {
@@ -72,9 +70,19 @@ fn anonymous_proving() -> Result<(), Box<dyn std::error::Error>> {
 
     //2. Compile the guest program
     println!("1. Compiling guest program...");
-    let elf_file_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("assets")
-        .join("fib_input");
+    
+    // Use ASSETS_DIR from environment, or fallback to `/app/assets`
+    let assets_dir = env::var("ASSETS_DIR").unwrap_or_else(|_| "/app/assets".to_string());
+    // Print debug info
+    println!("ASSETS_DIR: {}", assets_dir);
+    // Construct the file path
+    let elf_file_path = PathBuf::from(assets_dir).join("fib_input");
+
+    println!("Checking ELF file path: {:?}", elf_file_path);
+    if !elf_file_path.exists() {
+        panic!("❌ Error: ELF file not found at {:?}", elf_file_path);
+    }
+
     let prover =
         Stwo::<Local>::new_from_file(&elf_file_path).expect("failed to load guest program");
 
