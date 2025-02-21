@@ -1,5 +1,6 @@
 use nexus_sdk::{stwo::seq::Stwo, Local, Prover, Viewable};
 
+use crate::analytics;
 use crate::config;
 use crate::flops;
 use crate::orchestrator_client::OrchestratorClient;
@@ -29,7 +30,7 @@ async fn authenticated_proving(
     let prover =
         Stwo::<Local>::new_from_file(&elf_file_path).expect("failed to load guest program");
 
-    println!("4. Creating ZK proof with inputs...");
+    println!("4. Creating ZK proof with inputs");
     let (view, proof) = prover
         .prove_with_input::<(), u32>(&(), &public_input)
         .expect("Failed to run prover");
@@ -101,6 +102,7 @@ pub async fn start_prover(
 
     // Run the initial setup to determine anonymous or connected node
     match setup::run_initial_setup().await {
+        //each arm of the match is a choice by the user: anonymous or connected or invalid as catchall
         setup::SetupResult::Anonymous => {
             println!(
                 "\n===== {} =====\n",
@@ -109,6 +111,7 @@ pub async fn start_prover(
                     .underline()
                     .bright_cyan()
             );
+            let client_id = format!("{:x}", md5::compute(b"anonymous"));
             // Run the proof generation loop with anonymous proving
             let mut proof_count = 1;
             loop {
@@ -122,6 +125,18 @@ pub async fn start_prover(
                     Err(e) => println!("Error in anonymous proving: {}", e),
                 }
                 proof_count += 1;
+
+                analytics::track(
+                    "cli_proof_anon".to_string(),
+                    format!("Completed anon proof iteration #{}", proof_count),
+                    serde_json::json!({
+                        "node_id": "anonymous",
+                        "proof_count": proof_count,
+                    }),
+                    false,
+                    environment,
+                    client_id.clone(),
+                );
                 tokio::time::sleep(std::time::Duration::from_secs(4)).await;
             }
         }
@@ -152,19 +167,37 @@ pub async fn start_prover(
                 environment.to_string().bright_cyan()
             );
 
+            let client_id = format!("{:x}", md5::compute(node_id.as_bytes()));
             let mut proof_count = 1;
             loop {
                 println!("\n================================================");
                 println!(
                     "{}",
-                    format!("\nStarting proof #{} ...\n", proof_count).yellow()
+                    format!(
+                        "\n[node: {}] Starting proof #{} ...\n",
+                        node_id, proof_count
+                    )
+                    .yellow()
                 );
 
-                match authenticated_proving(&node_id, &environment).await {
+                match authenticated_proving(&node_id, environment).await {
                     Ok(_) => (),
-                    Err(e) => println!("\tError: {}", e),
+                    Err(_e) => (),
                 }
+
                 proof_count += 1;
+
+                analytics::track(
+                    "cli_proof_node".to_string(),
+                    format!("Completed proof iteration #{}", proof_count),
+                    serde_json::json!({
+                        "node_id": node_id,
+                        "proof_count": proof_count,
+                    }),
+                    false,
+                    environment,
+                    client_id.clone(),
+                );
                 tokio::time::sleep(std::time::Duration::from_secs(4)).await;
             }
         }
