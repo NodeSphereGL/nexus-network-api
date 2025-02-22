@@ -27,7 +27,7 @@ async fn authenticated_proving(
         }
         Err(_) => {
             println!("Using local inputs.");
-            return anonymous_proving();
+            return anonymous_proving(&node_id, environment).await;
         }
     };
     println!("Received a task to prove from Nexus Orchestrator...");
@@ -71,7 +71,10 @@ async fn authenticated_proving(
     Ok(())
 }
 
-fn anonymous_proving() -> Result<(), Box<dyn std::error::Error>> {
+async fn anonymous_proving(
+    node_id: &str,
+    environment: &config::Environment,
+) -> Result<(), Box<dyn std::error::Error>> {
     // 1. Instead of fetching the proof task from the orchestrator, we will use hardcoded input program and values
 
     // The 10th term of the Fibonacci sequence is 55
@@ -113,6 +116,17 @@ fn anonymous_proving() -> Result<(), Box<dyn std::error::Error>> {
         )
         .green(),
     );
+
+    let client = OrchestratorClient::new(environment.clone());
+    let proof_hash = format!("{:x}", Keccak256::digest(&proof_bytes));
+
+    println!("\tProof size: {} bytes", proof_bytes.len());
+    println!("Submitting ZK proof to Nexus Orchestrator...");
+    client
+        .submit_proof(node_id, &proof_hash, proof_bytes)
+        .await?;
+    println!("{}", "ZK proof successfully submitted".green());
+
     Ok(())
 }
 
@@ -151,10 +165,7 @@ pub async fn start_prover(
                     "{}",
                     format!("\nStarting proof #{} ...\n", proof_count).yellow()
                 );
-                match anonymous_proving() {
-                    Ok(_) => (),
-                    Err(e) => println!("Error in anonymous proving: {}", e),
-                }
+                anonymous_proving(&client_id, environment).await?;
                 proof_count += 1;
 
                 analytics::track(
